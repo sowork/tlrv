@@ -14,11 +14,14 @@ class CreateTlrvNodeAdditionsTable extends Migration
     public function up()
     {
         Schema::create('tlrv_node_additions', function (Blueprint $table) {
+            $table->engine = 'innoDB';
             $table->increments('id');
             $table->unsignedInteger('node_id');
             $table->text('addition_data');
 
             $table->timestamps();
+
+            $table->foreign('node_id')->references('id')->on('tlrv_nodes');
         });
     }
 

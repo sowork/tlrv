@@ -12,16 +12,16 @@ class CreateTlRVNodesTable extends Migration {
    */
   public function up() {
     Schema::create('tlrv_nodes', function(Blueprint $table) {
+        $table->engine = 'innoDB';
         $table->increments('id');
-        $table->unsignedInteger('parent_id');
-        $table->unsignedInteger('lft');
-        $table->unsignedInteger('rgt');
-        $table->unsignedInteger('depth');
+        $table->unsignedInteger('parent_id')->default(0);
+        $table->unsignedInteger('lft')->default(0);
+        $table->unsignedInteger('rgt')->default(0);
+        $table->unsignedInteger('depth')->default(0);
 
-        $table->string('key');
-        $table->string('value');
-        $table->string('directory_name');
-        $table->index(['parent_id', 'lft', 'rgt', 'depth', 'value']);
+        $table->string('node_key');
+        $table->string('node_value');
+        $table->index(['parent_id', 'lft', 'rgt', 'depth', 'node_value']);
 
         $table->timestamps();
     });

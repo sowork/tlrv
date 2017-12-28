@@ -15,6 +15,7 @@ class TLRVProvider extends ServiceProvider
     {
         //
         $this->registerMigration();
+        $this->registerViews();
     }
 
     /**
@@ -45,4 +46,24 @@ class TLRVProvider extends ServiceProvider
             __DIR__ . '/../database/migrations' => database_path('migrations'),
         ], 'tlrv-migrations');
     }
+
+    /**
+     * 注册视图
+     */
+    private function registerViews(){
+        $this->loadViewsFrom(__DIR__.'/../resource/views', 'tlrv');
+
+        $this->publishes([
+            __DIR__.'/../resource/assets/js' => base_path('resources/assets/js'),
+        ], 'tlrv-components');
+
+        $this->publishes([
+            __DIR__.'/../resource/ass/' => base_path('resources/assets/js/components'),
+        ], 'tlrv-components');
+
+        $this->publishes([
+            __DIR__.'/../resource/views' => base_path('resources/views/vendor/tlrv'),
+        ], 'tlrv-views');
+    }
+
 }
