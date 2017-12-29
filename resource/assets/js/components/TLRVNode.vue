@@ -4,14 +4,24 @@
             <div class="zTreeDemoBackground left">
                 <ul id="ztree" class="ztree"></ul>
             </div>
+            <div class="zTreeDemoBackground right">
+                <div class="addition_content">
+                    value值：
+                    <input type="text" v-model="node_value">
+                    <br>
+                    附加内容:
+                    <textarea  id="" cols="30" rows="10" v-model="additionData"></textarea>
+                    <input type="button" value="保存">
+                </div>
+            </div>
         </div>
         <div id="rMenu">
             <ul>
-                <li id="m_add" onclick="addTreeNode();">增加节点</li>
-                <li id="m_del" onclick="removeTreeNode();">删除节点</li>
-                <li id="m_check" onclick="checkTreeNode(true);">Check节点</li>
-                <li id="m_unCheck" onclick="checkTreeNode(false);">unCheck节点</li>
-                <li id="m_reset" onclick="resetTree();">恢复zTree</li>
+                <li id="m_add" @click="addTreeNode();">增加节点</li>
+                <li id="m_del" @click="removeTreeNode();">删除节点</li>
+                <li id="m_check" @click="checkTreeNode(true);">Check节点</li>
+                <li id="m_unCheck" @click="checkTreeNode(false);">unCheck节点</li>
+                <li id="m_reset" @click="resetTree();">恢复zTree</li>
             </ul>
         </div>
     </div>
@@ -24,7 +34,7 @@
     import "../zTree_v3/js/jquery.ztree.excheck.js"
     import "../zTree_v3/js/jquery.ztree.exedit.js"
 
-    let zTree, rMenu;
+    let zTree, rMenu, lastNode;
     let addCount = 1;
 
     export default {
@@ -33,8 +43,10 @@
         },
         data(){
             let that = this;
-
             return {
+                node_value: '132',
+                additionData:'',
+                zNodes : [],
                 setting:{
                     view: {
                         dblClickExpand: false
@@ -42,35 +54,41 @@
                     check: {
                         enable: true
                     },
+                    data: {
+                        simpleData: {
+                            enable: true
+                        }
+                    },
                     callback: {
-                        onRightClick: that.OnRightClick
+                        onRightClick: that.OnRightClick,
+                        onClick: that.onClick,
+                        onRename: that.onRename
+                    },
+                    edit: {
+                        enable: true,
+                        showRemoveBtn: false,
+                        showRenameBtn: false,
                     },
                 },
-                zNodes : [
-                    {id:1, name:"无右键菜单 1", open:true, noR:true,
-                        children:[
-                            {id:11, name:"节点 1-1", noR:true},
-                            {id:12, name:"节点 1-2", noR:true}
-
-                        ]},
-                    {id:2, name:"右键操作 2", open:true,
-                        children:[
-                            {id:21, name:"节点 2-1"},
-                            {id:22, name:"节点 2-2"},
-                            {id:23, name:"节点 2-3"},
-                            {id:24, name:"节点 2-4"}
-                        ]},
-                    {id:3, name:"右键操作 3", open:true,
-                        children:[
-                            {id:31, name:"节点 3-1"},
-                            {id:32, name:"节点 3-2"},
-                            {id:33, name:"节点 3-3"},
-                            {id:34, name:"节点 3-4"}
-                        ]}
-                ]
             }
         },
         methods: {
+            initData(){
+                axios.get('/tlrv/search', {
+                    params: {
+                    }
+                }).then((response) => {
+                    if(response.data.code == '0'){
+                        this.zNodes = response.data.data;
+                        $.fn.zTree.init($("#ztree"), this.setting, this.zNodes);
+                        zTree = $.fn.zTree.getZTreeObj("ztree");
+                        zTree.expandAll(true);
+                        rMenu = $("#rMenu");
+                    }
+                }).catch(function(error){
+                    alert('网络异常，请稍后重试！');
+                })
+            },
             OnRightClick(event, treeId, treeNode) {
                 if (!treeNode && event.target.tagName.toLowerCase() != "button" && $(event.target).parents("a").length == 0) {
                     zTree.cancelSelectedNode();
@@ -79,6 +97,49 @@
                     zTree.selectNode(treeNode);
                     this.showRMenu("node", event.clientX, event.clientY);
                 }
+                lastNode = treeNode;
+            },
+            onClick(){
+                let treeNode = zTree.getSelectedNodes()[0];
+                if(treeNode == lastNode){
+                    return;
+                }
+                if(this.node_value !== '' || this.additionalData !== ''){
+                    if(confirm('确定清空value数据和附加内容么?')){
+                        this.node_value = '';
+                        this.additionalData = '';
+                    }else{
+                        zTree.cancelSelectedNode(treeNode);
+                        zTree.selectNode(lastNode);
+                        return;
+                    }
+                }
+                lastNode = treeNode;
+            },
+            onRename(event, treeId, treeNode, isCancel){
+                var parentNode = zTree.getNodeByTId(treeNode.parentTId);
+                if(isCancel){
+                    if(parentNode){
+                        zTree.selectNode(parentNode);
+                    }
+                    zTree.removeNode(treeNode);
+                    return;
+                }
+
+                console.log(treeNode);
+
+                axios.post('/tlrv', {
+                    id: parentNode ? parentNode.id : 0,
+                    node_key:treeNode.name,
+                    node_value: this.node_value
+                }).then(function (response) {
+                    console.log(response.data.msg);
+                    if(response.data.code == '0'){
+                        treeNode.id = response.data.data.id;
+                    }
+                }).catch(function(error){
+                    alert('网络异常，请稍后重试！');
+                })
             },
             showRMenu(type, x, y) {
                 $("#rMenu ul").show();
@@ -108,17 +169,20 @@
                 }
             },
             addTreeNode() {
-                hideRMenu();
-                var newNode = { name:"增加" + (addCount++)};
+                this.hideRMenu();
+                var newNode = { name:""};
+                var nodes = zTree.getSelectedNodes();
+                var TreeNode;
                 if (zTree.getSelectedNodes()[0]) {
                     newNode.checked = zTree.getSelectedNodes()[0].checked;
-                    zTree.addNodes(zTree.getSelectedNodes()[0], newNode);
+                    TreeNode = zTree.addNodes(zTree.getSelectedNodes()[0], newNode);
                 } else {
-                    zTree.addNodes(null, newNode);
+                    TreeNode = zTree.addNodes(null, newNode);
                 }
+                zTree.editName(TreeNode[0]);
             },
             removeTreeNode() {
-                hideRMenu();
+                this.hideRMenu();
                 var nodes = zTree.getSelectedNodes();
                 if (nodes && nodes.length>0) {
                     if (nodes[0].children && nodes[0].children.length > 0) {
@@ -136,17 +200,15 @@
                 if (nodes && nodes.length>0) {
                     zTree.checkNode(nodes[0], checked, true);
                 }
-                hideRMenu();
+                this.hideRMenu();
             },
             resetTree() {
-                hideRMenu();
-                $.fn.zTree.init($("#treeDemo"), setting, zNodes);
+                this.hideRMenu();
+                $.fn.zTree.init($("#ztree"), this.setting, this.zNodes);
             }
         },
         mounted(){
-            $.fn.zTree.init($("#ztree"), this.setting, this.zNodes);
-            zTree = $.fn.zTree.getZTreeObj("ztree");
-            rMenu = $("#rMenu");
+            this.initData();
         }
     }
 </script>
@@ -162,5 +224,9 @@
         cursor: pointer;
         list-style: none outside none;
         background-color: #DFDFDF;
+    }
+    .addition_content {
+        margin: 20px;
+        padding: 20px;
     }
 </style>

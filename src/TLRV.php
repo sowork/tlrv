@@ -21,4 +21,5 @@ class TLRV
     public static function ignoreMigrations(){
         static::$runsMigrations = false;
     }
+
 }

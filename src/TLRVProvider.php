@@ -16,6 +16,7 @@ class TLRVProvider extends ServiceProvider
         //
         $this->registerMigration();
         $this->registerViews();
+        $this->registerRoutes();
     }
 
     /**
@@ -64,6 +65,10 @@ class TLRVProvider extends ServiceProvider
         $this->publishes([
             __DIR__.'/../resource/views' => base_path('resources/views/vendor/tlrv'),
         ], 'tlrv-views');
+    }
+
+    private function registerRoutes(){
+        $this->loadRoutesFrom(__DIR__.'/../routes/routes.php');
     }
 
 }
