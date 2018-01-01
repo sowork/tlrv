@@ -16,8 +16,8 @@ class CreateTlrvNodeAdditionsTable extends Migration
         Schema::create('tlrv_node_additions', function (Blueprint $table) {
             $table->engine = 'innoDB';
             $table->increments('id');
-            $table->unsignedInteger('node_id');
-            $table->text('addition_data');
+            $table->unsignedInteger('node_id')->default('0');
+            $table->text('addition_data')->default('');
 
             $table->timestamps();
 

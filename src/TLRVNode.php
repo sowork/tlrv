@@ -15,5 +15,14 @@ class TLRVNode extends Node
 {
     public $table = 'tlrv_nodes';
 
+    public function addition(){
+        return $this->hasOne('Sowork\TLRV\TLRVNodeAddition', 'node_id', 'id');
+    }
 
+    public $events = [
+        'deleting' => 'Sowork\TLRV\Http\Events\TLRVNodeDeleting',
+    ];
+    public $dispatchesEvents = [
+        'deleting' => 'Sowork\TLRV\Http\Events\TLRVNodeDeleting',
+    ];
 }

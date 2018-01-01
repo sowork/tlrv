@@ -1,7 +1,9 @@
 <?php
 
-Route::group(['prefix' => 'tlrv', 'namespace' => 'Sowork\TLRV\HTTP\Controllers'], function (){
+Route::group(['namespace' => 'Sowork\TLRV\Http\Controllers'], function (){
 
-    Route::get('/search', 'TLRVNodeController@search');
-    Route::resource('/', 'TLRVNodeController');
+    Route::get('tlrv/search', 'TLRVNodeController@search');
+    Route::resource('/tlrv', 'TLRVNodeController');
+
+    Route::resource('tlrv/addition', 'TLRVNodeAdditionController');
 });

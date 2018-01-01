@@ -35,6 +35,8 @@ class TLRVNodeSearch extends Resource
             'pId' => $this->parent_id ?: '0',
             'name' => $this->node_key,
             'open' => $this->when($this->parent_id == null, true),
+            'node_value' => $this->node_value,
+            'addition' => $this->addition ? $this->addition->addition_data : '' // optional 方法
         ];
     }
 }

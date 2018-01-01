@@ -59,7 +59,7 @@ class TLRVProvider extends ServiceProvider
         ], 'tlrv-components');
 
         $this->publishes([
-            __DIR__.'/../resource/ass/' => base_path('resources/assets/js/components'),
+            __DIR__.'/../resource/assets/' => base_path('resources/assets/js/components'),
         ], 'tlrv-components');
 
         $this->publishes([

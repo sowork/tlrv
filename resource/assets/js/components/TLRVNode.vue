@@ -11,7 +11,7 @@
                     <br>
                     附加内容:
                     <textarea  id="" cols="30" rows="10" v-model="additionData"></textarea>
-                    <input type="button" value="保存">
+                    <input @click="saveNode" type="button" value="保存">
                 </div>
             </div>
         </div>
@@ -35,7 +35,7 @@
     import "../zTree_v3/js/jquery.ztree.exedit.js"
 
     let zTree, rMenu, lastNode;
-    let addCount = 1;
+    var curDragNodes, className = "dark";
 
     export default {
         name: 'zTree',
@@ -44,7 +44,7 @@
         data(){
             let that = this;
             return {
-                node_value: '132',
+                node_value: '',
                 additionData:'',
                 zNodes : [],
                 setting:{
@@ -60,11 +60,20 @@
                         }
                     },
                     callback: {
+                        beforeDragOpen: that.beforeDragOpen,
+                        beforeDrag: that.beforeDrag,
                         onRightClick: that.OnRightClick,
                         onClick: that.onClick,
-                        onRename: that.onRename
+                        onRename: that.onRename,
+                        onNodeCreated: that.onNodeCreated,
                     },
                     edit: {
+                        drag: {
+                            autoExpandTrigger: true,
+                            prev: that.dropPrev,
+                            inner: that.dropInner,
+                            next: that.dropNext
+                        },
                         enable: true,
                         showRemoveBtn: false,
                         showRenameBtn: false,
@@ -73,6 +82,80 @@
             }
         },
         methods: {
+            dropPrev(treeId, nodes, targetNode) {
+                var pNode = targetNode.getParentNode();
+                if (pNode && pNode.dropInner === false) {
+                    return false;
+                } else {
+                    for (var i=0,l=curDragNodes.length; i<l; i++) {
+                        var curPNode = curDragNodes[i].getParentNode();
+                        if (curPNode && curPNode !== targetNode.getParentNode() && curPNode.childOuter === false) {
+                            return false;
+                        }
+                    }
+                }
+                console.log(nodes);
+                return;
+                axios.post('/tlrv/' + nodes[0].id, {
+                    '_method': 'put',
+                    'tar_id':targetNode.id
+                }).then(function (response) {
+                    if(response.data.code == '0'){
+                        return true;
+                    }else{
+                        alert(response.data.msg);
+                        return false;
+                    }
+                }).catch(function(error){
+                    alert('网络异常，请稍后重试！');
+                });
+            },
+            dropInner(treeId, nodes, targetNode) {
+                if (targetNode && targetNode.dropInner === false) {
+                    return false;
+                } else {
+                    for (var i=0,l=curDragNodes.length; i<l; i++) {
+                        if (!targetNode && curDragNodes[i].dropRoot === false) {
+                            return false;
+                        } else if (curDragNodes[i].parentTId && curDragNodes[i].getParentNode() !== targetNode && curDragNodes[i].getParentNode().childOuter === false) {
+                            return false;
+                        }
+                    }
+                }
+                return true;
+            },
+            dropNext(treeId, nodes, targetNode) {
+                var pNode = targetNode.getParentNode();
+                if (pNode && pNode.dropInner === false) {
+                    return false;
+                } else {
+                    for (var i=0,l=curDragNodes.length; i<l; i++) {
+                        var curPNode = curDragNodes[i].getParentNode();
+                        if (curPNode && curPNode !== targetNode.getParentNode() && curPNode.childOuter === false) {
+                            return false;
+                        }
+                    }
+                }
+                return true;
+            },
+            beforeDrag(treeId, treeNodes) {
+                className = (className === "dark" ? "":"dark");
+                for (var i=0,l=treeNodes.length; i<l; i++) {
+                    if (treeNodes[i].drag === false) {
+                        curDragNodes = null;
+                        return false;
+                    } else if (treeNodes[i].parentTId && treeNodes[i].getParentNode().childDrag === false) {
+                        curDragNodes = null;
+                        return false;
+                    }
+                }
+                curDragNodes = treeNodes;
+                return true;
+            },
+            beforeDragOpen(treeId, treeNode) {
+                autoExpandNode = treeNode;
+                return true;
+            },
             initData(){
                 axios.get('/tlrv/search', {
                     params: {
@@ -99,21 +182,26 @@
                 }
                 lastNode = treeNode;
             },
-            onClick(){
-                let treeNode = zTree.getSelectedNodes()[0];
+            onNodeCreated(event, treeId, treeNode){
+                this.node_value = '';
+                this.additionData = '';
+            },
+            onClick(event, treeId, treeNode){
                 if(treeNode == lastNode){
                     return;
                 }
-                if(this.node_value !== '' || this.additionalData !== ''){
-                    if(confirm('确定清空value数据和附加内容么?')){
-                        this.node_value = '';
-                        this.additionalData = '';
-                    }else{
-                        zTree.cancelSelectedNode(treeNode);
-                        zTree.selectNode(lastNode);
-                        return;
-                    }
-                }
+                this.node_value = treeNode.node_value ? treeNode.node_value : '';
+                this.additionData = treeNode.addition_data ? treeNode.addition_data : '';
+//                if(this.node_value !== '' || this.additionalData !== ''){
+//                    if(confirm('确定清空value数据和附加内容么?')){
+//                        this.node_value = '';
+//                        this.additionalData = '';
+//                    }else{
+//                        zTree.cancelSelectedNode(treeNode);
+//                        zTree.selectNode(lastNode);
+//                        return;
+//                    }
+//                }
                 lastNode = treeNode;
             },
             onRename(event, treeId, treeNode, isCancel){
@@ -126,16 +214,19 @@
                     return;
                 }
 
-                console.log(treeNode);
-
+                if(treeNode.name == '') {
+                    zTree.removeNode(treeNode);
+                    return;
+                }
                 axios.post('/tlrv', {
                     id: parentNode ? parentNode.id : 0,
                     node_key:treeNode.name,
                     node_value: this.node_value
                 }).then(function (response) {
-                    console.log(response.data.msg);
                     if(response.data.code == '0'){
                         treeNode.id = response.data.data.id;
+                    }else{
+                        alert(response.data.msg);
                     }
                 }).catch(function(error){
                     alert('网络异常，请稍后重试！');
@@ -187,12 +278,21 @@
                 if (nodes && nodes.length>0) {
                     if (nodes[0].children && nodes[0].children.length > 0) {
                         var msg = "要删除的节点是父节点，如果删除将连同子节点一起删掉。\n\n请确认！";
-                        if (confirm(msg)==true){
-                            zTree.removeNode(nodes[0]);
+                        if (confirm(msg)==false){
+                            return false;
                         }
-                    } else {
-                        zTree.removeNode(nodes[0]);
                     }
+                    axios.post('/tlrv/' + nodes[0].id, {
+                        '_method' : 'DELETE',
+                    }).then((response) => {
+                        if(response.data.code == '0'){
+                            zTree.removeNode(nodes[0]);
+                        }else{
+                            alert(response.data.msg)
+                        }
+                    }).catch(function(error){
+                        alert('网络异常，请稍后重试！');
+                    })
                 }
             },
             checkTreeNode(checked) {
@@ -205,6 +305,24 @@
             resetTree() {
                 this.hideRMenu();
                 $.fn.zTree.init($("#ztree"), this.setting, this.zNodes);
+            },
+            saveNode(){
+                var nodeTree = zTree.getSelectedNodes()[0];
+                if(! nodeTree){
+                    alert('请选择至少一个节点');
+                    return false;
+                }
+                axios.post('/tlrv/addition', {
+                    id: nodeTree.id,
+                    addition_data: this.additionalData,
+                    node_value: this.node_value
+                }).then((response) => {
+                    if(response.data.code == '-1'){
+                        alert('保存失败');
+                    }
+                }).catch(function(error){
+                    alert('网络异常，请稍后重试！');
+                })
             }
         },
         mounted(){

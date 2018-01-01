@@ -19,12 +19,9 @@ class TLRVNodeAddition extends Model implements TLRVNodeAdditionInterFace
 
     public $fillable = ['addition_data', 'node_id'];
 
-    public static function addNodeAddition(BaumModel $model, $addition){
-        if($model->id) {
-            $node = self::firstOrNew(['node_id' => $model->id]);
-            $node->addition_data = $addition;
+    public static function addNodeAddition($node_id, $addition){
+            $node = self::firstOrNew(['node_id' => $node_id]);
+            $node->addition_data = empty($addition) ? '' : $addition;
             return $node->save();
-        }
-        return false;
     }
 }

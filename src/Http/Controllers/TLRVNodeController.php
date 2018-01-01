@@ -6,12 +6,14 @@
  * Time: 14:16
  */
 
-namespace Sowork\TLRV\HTTP\Controllers;
+namespace Sowork\TLRV\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Sowork\TLRV\Http\Resources\TLRVNodeSearch;
 use Sowork\TLRV\TLRVNode;
+use Sowork\TLRV\TLRVNodeAddition;
 
 class TLRVNodeController extends Controller
 {
@@ -30,7 +32,8 @@ class TLRVNodeController extends Controller
         $nodes = TLRVNode::roots()->get();
         $temp = [];
         foreach ($nodes as $node){
-            $temp = array_merge($temp, TLRVNodeSearch::collection($node->descendantsAndSelf()->get())->resource->toArray());
+            $tree = $node->descendantsAndSelf()->with('addition')->get();
+            $temp = array_merge($temp, TLRVNodeSearch::collection($tree)->resource->toArray());
         }
 
         return response()->json([
@@ -103,6 +106,8 @@ class TLRVNodeController extends Controller
     public function update(Request $request, $id)
     {
         //
+        $node = TLRVNode::find($id);
+        echo $node->moveToLeftOf($request->input('tar_id'));
     }
 
     /**
@@ -114,5 +119,30 @@ class TLRVNodeController extends Controller
     public function destroy($id)
     {
         //
+        $node = TLRVNode::where('id', $id)->first();
+        $res = false;
+        if($node){
+            $del_nodes = $node->getDescendantsAndSelf();
+            DB::beginTransaction();
+            try{
+                if($del_nodes){
+                    $del_ids = array_column($del_nodes->toArray(), 'id');
+                    TLRVNodeAddition::whereIn('node_id', $del_ids)->delete();
+                }
+                $node->delete($id);
+                $res = true;
+            }catch (\Exception $e){
+                $res = false;
+                DB::rollBack();
+            }finally{
+                DB::commit();
+            }
+        }
+
+        return response()->json([
+            'code' => $res ? '0' : '-1',
+            'msg' => $res ?  '操作成功' : '操作失败',
+            'data' => ''
+        ]);
     }
 }

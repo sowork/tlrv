@@ -11,5 +11,5 @@ use Baum\Extensions\Eloquent\Model;
 
 interface TLRVNodeAdditionInterFace
 {
-    public static function addNodeAddition(Model $node, $addition);
+    public static function addNodeAddition($node_id, $addition);
 }
