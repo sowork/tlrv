@@ -106,8 +106,24 @@ class TLRVNodeController extends Controller
     public function update(Request $request, $id)
     {
         //
+        $type = $request->input('type');
+        $tar_id = $request->input('tar_id');
         $node = TLRVNode::find($id);
-        echo $node->moveToLeftOf($request->input('tar_id'));
+        switch ($type){
+            case 'prev':
+                $node->moveToLeftOf($tar_id);
+                break;
+            case 'inner':
+                if($tar_id == 0){
+                    $node->makeRoot($id);
+                }else{
+                    $node->makeChildOf($tar_id);
+                }
+                break;
+            case 'next':
+                $node->moveToRightOf($tar_id);
+                break;
+        }
     }
 
     /**

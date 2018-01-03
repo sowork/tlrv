@@ -66,6 +66,7 @@
                         onClick: that.onClick,
                         onRename: that.onRename,
                         onNodeCreated: that.onNodeCreated,
+                        onDrop: that.onDrop
                     },
                     edit: {
                         drag: {
@@ -82,6 +83,24 @@
             }
         },
         methods: {
+            onDrop(event, treeId, treeNodes, targetNode, moveType){
+                if(moveType){
+                    axios.post('/tlrv/' + treeNodes[0].id, {
+                        '_method': 'put',
+                        'tar_id':targetNode ? targetNode.id : 0,
+                        'type' : moveType
+                    }).then(function (response) {
+                        if(response.data.code == '0'){
+                            return true;
+                        }else{
+                            alert(response.data.msg);
+                            return false;
+                        }
+                    }).catch(function(error){
+                        alert('网络异常，请稍后重试！');
+                    });
+                }
+            },
             dropPrev(treeId, nodes, targetNode) {
                 var pNode = targetNode.getParentNode();
                 if (pNode && pNode.dropInner === false) {
@@ -94,21 +113,7 @@
                         }
                     }
                 }
-                console.log(nodes);
-                return;
-                axios.post('/tlrv/' + nodes[0].id, {
-                    '_method': 'put',
-                    'tar_id':targetNode.id
-                }).then(function (response) {
-                    if(response.data.code == '0'){
-                        return true;
-                    }else{
-                        alert(response.data.msg);
-                        return false;
-                    }
-                }).catch(function(error){
-                    alert('网络异常，请稍后重试！');
-                });
+                return true;
             },
             dropInner(treeId, nodes, targetNode) {
                 if (targetNode && targetNode.dropInner === false) {
