@@ -23,7 +23,6 @@ class TLRVNodeStore extends FormRequest
         return [
             'id' => 'required|integer',
             'node_key' => 'required|max:191',
-            'node_value' => 'max:191'
         ];
     }
 

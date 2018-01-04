@@ -88,9 +88,9 @@
         methods: {
             rebuild(){
                 axios.get('/tlrv/rebuild', {
-                }).then(function (response) {
+                }).then(response => {
                     if(response.data.code == '0'){
-                        return true;
+                        this.initData()
                     }else{
                         alert(response.data.msg);
                         return false;
