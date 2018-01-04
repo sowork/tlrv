@@ -48,14 +48,15 @@ class TLRVNodeAdditionController extends Controller
     {
         $id = $request->input('id');
         $node = TLRVNode::find($id);
-        if($node){
-            $node->node_value = $request->input('node_value');
-            $res = false;
-            DB::transaction(function () use($node, $id, $request, &$res) {
-                $node->save();
-                $res = TLRVNodeAddition::addNodeAddition($id, $request->input('addition_data'));
+        try {
+            $res = true;
+            DB::transaction(function () use ($node, $id, $request) {
+                $node->save($request->only('node_value', 'node_uid'));
+                TLRVNodeAddition::addNodeAddition($id, $request->input('addition_data'));
             });
-
+        }catch (\Exception $e){
+            $res = false;
+        }finally{
             return response()->json([
                 'code' => $res ? '0' : '-1',
                 'msg' => $res ? '保存成功' : '保存失败',

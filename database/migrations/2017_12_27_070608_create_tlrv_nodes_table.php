@@ -21,6 +21,7 @@ class CreateTlRVNodesTable extends Migration {
 
         $table->string('node_key')->default('');
         $table->string('node_value')->default('');
+        $table->unsignedInteger('node_uid')->nullable()->unique();
 
         $table->timestamps();
     });

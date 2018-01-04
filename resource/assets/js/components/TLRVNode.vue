@@ -5,14 +5,20 @@
                 <ul id="ztree" class="ztree"></ul>
             </div>
             <div class="zTreeDemoBackground right">
-                <div class="addition_content">
-                    value值：
-                    <input type="text" v-model="node_value">
-                    <br>
-                    附加内容:
-                    <textarea  id="" cols="30" rows="10" v-model="additionData"></textarea>
-                    <input @click="saveNode" type="button" value="保存">
-                </div>
+                uid：
+                <br>
+                <input type="text" v-model="node_uid">
+                <br>
+                node_value：
+                <br>
+                <input type="text" v-model="node_value">
+                <br>
+                addition:<br>
+                <textarea  id="" cols="30" rows="10" v-model="additionData"></textarea>
+                <p>
+                    <button @click="saveNode">保存</button>
+                    <button @click="rebuild">重建</button>
+                </p>
             </div>
         </div>
         <div id="rMenu">
@@ -21,7 +27,6 @@
                 <li id="m_del" @click="removeTreeNode();">删除节点</li>
                 <li id="m_check" @click="checkTreeNode(true);">Check节点</li>
                 <li id="m_unCheck" @click="checkTreeNode(false);">unCheck节点</li>
-                <li id="m_reset" @click="resetTree();">恢复zTree</li>
             </ul>
         </div>
     </div>
@@ -46,13 +51,11 @@
             return {
                 node_value: '',
                 additionData:'',
+                node_uid:'',
                 zNodes : [],
                 setting:{
                     view: {
                         dblClickExpand: false
-                    },
-                    check: {
-                        enable: true
                     },
                     data: {
                         simpleData: {
@@ -83,6 +86,19 @@
             }
         },
         methods: {
+            rebuild(){
+                axios.get('/tlrv/rebuild', {
+                }).then(function (response) {
+                    if(response.data.code == '0'){
+                        return true;
+                    }else{
+                        alert(response.data.msg);
+                        return false;
+                    }
+                }).catch(function(error){
+                    alert('网络异常，请稍后重试！');
+                });
+            },
             onDrop(event, treeId, treeNodes, targetNode, moveType){
                 if(moveType){
                     axios.post('/tlrv/' + treeNodes[0].id, {
@@ -190,6 +206,7 @@
             onNodeCreated(event, treeId, treeNode){
                 this.node_value = '';
                 this.additionData = '';
+                this.node_uid = '';
             },
             onClick(event, treeId, treeNode){
                 if(treeNode == lastNode){
@@ -197,6 +214,7 @@
                 }
                 this.node_value = treeNode.node_value ? treeNode.node_value : '';
                 this.additionData = treeNode.addition_data ? treeNode.addition_data : '';
+                this.node_uid = treeNode.node_uid ? treeNode.node_uid : '';
 //                if(this.node_value !== '' || this.additionalData !== ''){
 //                    if(confirm('确定清空value数据和附加内容么?')){
 //                        this.node_value = '';
@@ -226,7 +244,6 @@
                 axios.post('/tlrv', {
                     id: parentNode ? parentNode.id : 0,
                     node_key:treeNode.name,
-                    node_value: this.node_value
                 }).then(function (response) {
                     if(response.data.code == '0'){
                         treeNode.id = response.data.data.id;
@@ -307,10 +324,6 @@
                 }
                 this.hideRMenu();
             },
-            resetTree() {
-                this.hideRMenu();
-                $.fn.zTree.init($("#ztree"), this.setting, this.zNodes);
-            },
             saveNode(){
                 var nodeTree = zTree.getSelectedNodes()[0];
                 if(! nodeTree){
@@ -319,10 +332,15 @@
                 }
                 axios.post('/tlrv/addition', {
                     id: nodeTree.id,
-                    addition_data: this.additionalData,
-                    node_value: this.node_value
+                    addition_data: this.additionData,
+                    node_value: this.node_value,
+                    node_uid: this.node_uid,
                 }).then((response) => {
-                    if(response.data.code == '-1'){
+                    if(response.data.code == '0'){
+                        nodeTree.node_value = this.node_value;
+                        nodeTree.addition_data = this.additionData;
+                        nodeTree.node_uid = this.node_uid;
+                    }else{
                         alert('保存失败');
                     }
                 }).catch(function(error){
@@ -347,9 +365,5 @@
         cursor: pointer;
         list-style: none outside none;
         background-color: #DFDFDF;
-    }
-    .addition_content {
-        margin: 20px;
-        padding: 20px;
     }
 </style>

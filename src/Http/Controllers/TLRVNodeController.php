@@ -43,6 +43,15 @@ class TLRVNodeController extends Controller
         ]);
     }
 
+    public function rebuild(){
+        TLRVNode::rebuild();
+        return response()->json([
+            'code' => '0',
+            'msg' => '操作成功',
+            'data' => ''
+        ]);
+    }
+
     /**
      * Show the form for creating a new resource.
      *
@@ -60,11 +69,11 @@ class TLRVNodeController extends Controller
     public function store(Request $request)
     {
         //
-        $data = $request->all();
-        if(empty($data['id'])){
-            $node = TLRVNode::create($request->only(['node_key', 'node_value']));
+        $id = $request->input('id');
+        if(empty($id)){
+            $node = TLRVNode::create($request->only(['node_key']));
         }else{
-            $node = TLRVNode::find($data['id'])->children()->create($request->only(['node_key', 'node_value']));
+            $node = TLRVNode::find($id)->children()->create($request->only(['node_key']));
         }
 
         return response()->json([
@@ -136,29 +145,24 @@ class TLRVNodeController extends Controller
     {
         //
         $node = TLRVNode::where('id', $id)->first();
-        $res = false;
-        if($node){
-            $del_nodes = $node->getDescendantsAndSelf();
-            DB::beginTransaction();
-            try{
+        try{
+            DB::transaction(function () use ($node, $id){
+                $del_nodes = $node->getDescendantsAndSelf();
                 if($del_nodes){
                     $del_ids = array_column($del_nodes->toArray(), 'id');
                     TLRVNodeAddition::whereIn('node_id', $del_ids)->delete();
                 }
                 $node->delete($id);
-                $res = true;
-            }catch (\Exception $e){
-                $res = false;
-                DB::rollBack();
-            }finally{
-                DB::commit();
-            }
+            });
+            $res = true;
+        }catch (\Exception $e){
+            $res = false;
+        }finally{
+            return response()->json([
+                'code' => $res ? '0' : '-1',
+                'msg' => $res ?  '操作成功' : '操作失败',
+                'data' => ''
+            ]);
         }
-
-        return response()->json([
-            'code' => $res ? '0' : '-1',
-            'msg' => $res ?  '操作成功' : '操作失败',
-            'data' => ''
-        ]);
     }
 }
