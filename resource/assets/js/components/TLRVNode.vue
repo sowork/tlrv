@@ -17,7 +17,7 @@
                 <textarea  id="" cols="30" rows="10" v-model="additionData"></textarea>
                 <p>
                     <button @click="saveNode">保存</button>
-                    <button @click="rebuild">重建</button>
+                    <button @click="rebuild">重建索引</button>
                 </p>
             </div>
         </div>
