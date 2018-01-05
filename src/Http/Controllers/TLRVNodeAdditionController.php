@@ -11,6 +11,7 @@ namespace Sowork\TLRV\Http\Controllers;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Sowork\TLRV\Http\Request\TLRVNodeAdditionStore;
 use Sowork\TLRV\TLRVNode;
 use Sowork\TLRV\TLRVNodeAddition;
 
@@ -44,7 +45,7 @@ class TLRVNodeAdditionController extends Controller
      * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\Response
      */
-    public function store(Request $request)
+    public function store(TLRVNodeAdditionStore $request)
     {
         $id = $request->input('id');
         $node = TLRVNode::find($id);

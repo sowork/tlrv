@@ -231,18 +231,19 @@
                         if(parentNode){
                             zTree.selectNode(parentNode);
                         }
+                        return true;
                     }
                     if(newName == '' && !isCancel){
                         treeNode.history_name = treeNode.name;
+                        return true;
                     }
-                    return true;
                 }
                 if(treeNode.name == newName){
                     return true;
                 }
 
                 var url;
-                var params = {node_key:treeNode.name};
+                var params = {node_key:newName};
                 if(treeNode.id){
                     url = '/tlrv/' + treeNode.id;
                     params._method = 'put';

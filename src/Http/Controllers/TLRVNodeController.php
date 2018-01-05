@@ -12,6 +12,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Sowork\TLRV\Http\Request\TLRVNodeStore;
+use Sowork\TLRV\Http\Request\TLRVNodeUpdate;
 use Sowork\TLRV\Http\Resources\TLRVNodeSearch;
 use Sowork\TLRV\TLRVNode;
 use Sowork\TLRV\TLRVNodeAddition;
@@ -113,7 +114,7 @@ class TLRVNodeController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function update(Request $request, $id)
+    public function update(TLRVNodeUpdate $request, $id)
     {
         //
         $type = $request->input('type');
@@ -122,7 +123,7 @@ class TLRVNodeController extends Controller
         try {
             switch ($type) {
                 case 'prev':
-                    $info = $node->moveToLeftOf($tar_id);
+                    $node->moveToLeftOf($tar_id);
                     break;
                 case 'inner':
                     if ($tar_id == 0) {

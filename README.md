@@ -14,3 +14,9 @@
 ## 效果如下
 ![](./tlrv.jpg)
 
+## 使用
+- `php artisan vendor:publish` 发布资源（数据库表、组件、视图文件）
+- `npm install` or `yarn` 命令安装前端模块
+- 在 `resource/assets/js/app.js` 里注册组件 `Vue.component('tlrv-node', require('./components/TLRVNode.vue'));`
+- 浏览器访问 `域名/tlrv` 即可预览
+
