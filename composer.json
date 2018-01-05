@@ -1,7 +1,7 @@
 {
     "name": "sowork/tlrv",
     "type": "laravel-package",
-    "description": "Tree data-driven provider",
+    "description": "data dictionary",
     "keywords": [],
     "license": "MIT",
     "authors": [

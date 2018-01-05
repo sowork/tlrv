@@ -24,9 +24,10 @@
         <div id="rMenu">
             <ul>
                 <li id="m_add" @click="addTreeNode();">增加节点</li>
+                <li id="m_upd" @click="updateTreeNode();">修改节点</li>
                 <li id="m_del" @click="removeTreeNode();">删除节点</li>
-                <li id="m_check" @click="checkTreeNode(true);">Check节点</li>
-                <li id="m_unCheck" @click="checkTreeNode(false);">unCheck节点</li>
+                <!--<li id="m_check" @click="checkTreeNode(true);">Check节点</li>-->
+                <!--<li id="m_unCheck" @click="checkTreeNode(false);">unCheck节点</li>-->
             </ul>
         </div>
     </div>
@@ -39,7 +40,7 @@
     import "../zTree_v3/js/jquery.ztree.excheck.js"
     import "../zTree_v3/js/jquery.ztree.exedit.js"
 
-    let zTree, rMenu, lastNode;
+    let zTree, rMenu;
     var curDragNodes, className = "dark";
 
     export default {
@@ -67,9 +68,10 @@
                         beforeDrag: that.beforeDrag,
                         onRightClick: that.OnRightClick,
                         onClick: that.onClick,
-                        onRename: that.onRename,
+                        beforeRename: that.beforeRename,
                         onNodeCreated: that.onNodeCreated,
-                        onDrop: that.onDrop
+                        onDrop: that.onDrop,
+                        onRename: that.onRename
                     },
                     edit: {
                         drag: {
@@ -188,6 +190,15 @@
                         zTree = $.fn.zTree.getZTreeObj("ztree");
                         zTree.expandAll(true);
                         rMenu = $("#rMenu");
+
+                        var nodes = zTree.getNodes();
+                        if (nodes.length>0) {
+                            zTree.selectNode(nodes[0]);
+                            this.node_uid = nodes[0].node_uid;
+                            this.node_value = nodes[0].node_value;
+                            this.additionData = nodes[0].addition_data;
+                        }
+
                     }
                 }).catch(function(error){
                     alert('网络异常，请稍后重试！');
@@ -201,7 +212,6 @@
                     zTree.selectNode(treeNode);
                     this.showRMenu("node", event.clientX, event.clientY);
                 }
-                lastNode = treeNode;
             },
             onNodeCreated(event, treeId, treeNode){
                 this.node_value = '';
@@ -209,42 +219,39 @@
                 this.node_uid = '';
             },
             onClick(event, treeId, treeNode){
-                if(treeNode == lastNode){
-                    return;
-                }
                 this.node_value = treeNode.node_value ? treeNode.node_value : '';
                 this.additionData = treeNode.addition_data ? treeNode.addition_data : '';
                 this.node_uid = treeNode.node_uid ? treeNode.node_uid : '';
-//                if(this.node_value !== '' || this.additionalData !== ''){
-//                    if(confirm('确定清空value数据和附加内容么?')){
-//                        this.node_value = '';
-//                        this.additionalData = '';
-//                    }else{
-//                        zTree.cancelSelectedNode(treeNode);
-//                        zTree.selectNode(lastNode);
-//                        return;
-//                    }
-//                }
-                lastNode = treeNode;
             },
-            onRename(event, treeId, treeNode, isCancel){
+            beforeRename(treeId, treeNode, newName, isCancel){
                 var parentNode = zTree.getNodeByTId(treeNode.parentTId);
-                if(isCancel){
-                    if(parentNode){
-                        zTree.selectNode(parentNode);
+                if(treeNode.name == '' || isCancel || newName == ''){
+                    if(treeNode.id == undefined && newName == ''){
+                        zTree.removeNode(treeNode);
+                        if(parentNode){
+                            zTree.selectNode(parentNode);
+                        }
                     }
-                    zTree.removeNode(treeNode);
-                    return;
+                    if(newName == '' && !isCancel){
+                        treeNode.history_name = treeNode.name;
+                    }
+                    return true;
+                }
+                if(treeNode.name == newName){
+                    return true;
                 }
 
-                if(treeNode.name == '') {
-                    zTree.removeNode(treeNode);
-                    return;
+                var url;
+                var params = {node_key:treeNode.name};
+                if(treeNode.id){
+                    url = '/tlrv/' + treeNode.id;
+                    params._method = 'put';
+                    params.type = 'update';
+                }else{
+                    url = '/tlrv';
+                    params.id = parentNode ? parentNode.id : 0;
                 }
-                axios.post('/tlrv', {
-                    id: parentNode ? parentNode.id : 0,
-                    node_key:treeNode.name,
-                }).then(function (response) {
+                axios.post(url, params).then(function (response) {
                     if(response.data.code == '0'){
                         treeNode.id = response.data.data.id;
                     }else{
@@ -253,6 +260,13 @@
                 }).catch(function(error){
                     alert('网络异常，请稍后重试！');
                 })
+            },
+
+            onRename(event, treeId, treeNode, isCancel){
+                if(treeNode.history_name){
+                    treeNode.name = treeNode.history_name;
+                    zTree.updateNode(treeNode);
+                }
             },
             showRMenu(type, x, y) {
                 $("#rMenu ul").show();
@@ -286,13 +300,18 @@
                 var newNode = { name:""};
                 var nodes = zTree.getSelectedNodes();
                 var TreeNode;
-                if (zTree.getSelectedNodes()[0]) {
-                    newNode.checked = zTree.getSelectedNodes()[0].checked;
-                    TreeNode = zTree.addNodes(zTree.getSelectedNodes()[0], newNode);
+                if (nodes[0]) {
+                    TreeNode = zTree.addNodes(nodes[0], newNode);
                 } else {
                     TreeNode = zTree.addNodes(null, newNode);
                 }
+                zTree.selectNode(TreeNode[0]);
                 zTree.editName(TreeNode[0]);
+            },
+            updateTreeNode(){
+                this.hideRMenu();
+                var nodes = zTree.getSelectedNodes();
+                zTree.editName(nodes[0]);
             },
             removeTreeNode() {
                 this.hideRMenu();

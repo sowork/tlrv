@@ -119,21 +119,37 @@ class TLRVNodeController extends Controller
         $type = $request->input('type');
         $tar_id = $request->input('tar_id');
         $node = TLRVNode::find($id);
-        switch ($type){
-            case 'prev':
-                $node->moveToLeftOf($tar_id);
-                break;
-            case 'inner':
-                if($tar_id == 0){
-                    $node->makeRoot($id);
-                }else{
-                    $node->makeChildOf($tar_id);
-                }
-                break;
-            case 'next':
-                $node->moveToRightOf($tar_id);
-                break;
+        try {
+            switch ($type) {
+                case 'prev':
+                    $info = $node->moveToLeftOf($tar_id);
+                    break;
+                case 'inner':
+                    if ($tar_id == 0) {
+                        $node->makeRoot($id);
+                    } else {
+                        $node->makeChildOf($tar_id);
+                    }
+                    break;
+                case 'next':
+                    $node->moveToRightOf($tar_id);
+                    break;
+                case 'update':
+                    $node->node_key = $request->input('node_key');
+                    $node->save();
+                    break;
+            }
+            $res = true;
+        }catch(\Exception $e){
+            $res = false;
+        }finally{
+            return response()->json([
+                'code' => $res ? '0' : '-1',
+                'msg' => $res ? '操作成功' : '操作失败',
+                'data' => ''
+            ]);
         }
+
     }
 
     /**

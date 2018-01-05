@@ -51,7 +51,7 @@ class TLRVNodeAdditionController extends Controller
         try {
             $res = true;
             DB::transaction(function () use ($node, $id, $request) {
-                $node->save($request->only('node_value', 'node_uid'));
+                $node->fill($request->only('node_value', 'node_uid'))->save();
                 TLRVNodeAddition::addNodeAddition($id, $request->input('addition_data'));
             });
         }catch (\Exception $e){
