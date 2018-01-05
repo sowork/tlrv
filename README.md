@@ -13,6 +13,9 @@
 
 ## 效果如下
 ![](./tlrv.jpg)
+- uid唯一id作为查询主键
+- node_value 是value值
+- addition作为拓展信息
 
 ## 使用
 - `php artisan vendor:publish` 发布资源（数据库表、组件、视图文件）

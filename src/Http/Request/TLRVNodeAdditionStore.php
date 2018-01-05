@@ -24,7 +24,6 @@ class TLRVNodeAdditionStore extends FormRequest
             'id' => 'required|integer',
             'node_value' => 'max:191',
             'node_uid' => 'max:191',
-            'addition_data' => 'json',
         ];
     }
 
